@@ -3,6 +3,7 @@ import pickle
 from facerecog import analysis1
 import requests
 
+
 def analyze_emotion(image_path):
     # Implement emotion analysis logic here
     # This could involve using computer vision or machine learning techniques
@@ -12,5 +13,7 @@ def analyze_emotion(image_path):
     # img_path="./assets/download.jpg"
     result = analysis_function(image_path)
     print(result)
+
+    return result
 
 # analyze_emotion()
