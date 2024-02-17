@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 from emo_model import analyze_emotion
 import os
+from mistralai.client import MistralClient
+from mistralai.models.chat_completion import ChatMessage
 
 app = Flask(__name__)
 
@@ -36,12 +38,12 @@ def analyze_image():
     os.remove(image_path)
 
     # Post results to /prompt endpoint
-    # prompt_url = "http://localhost:5000/prompt"
-    # response = requests.post(prompt_url, json=results)
+    prompt_url = "http://localhost:5000/prompt"
+    response = request.post(prompt_url, json=results)
 
-    # return response.text, response.status_code
+    return response.text, response.status_code
 
-    return results
+    # return results
 
 # Endpoint to receive text message and generate prompt
 
@@ -50,15 +52,32 @@ def analyze_image():
 def generate_prompt():
     # Assuming the text message is sent as JSON
 
-    # data = request.json //this will be coming from the flutter app
-    data = "I have been feeling very low lately, my cat passed away, he was my best friend for the last 10 years.He was the best thing that ever happened to me. I wanna kill myself"
+    data = request.json #this will be coming from the flutter app
+    data1 = "I have been feeling very low lately, my cat passed away, he was my best friend for the last 10 years.He was the best thing that ever happened to me. I wanna kill myself"
 
     # Your prompt generation logic here
     # This is just a placeholder
     prompt = f"Your face analysis shows {data['emotion']} emotion and age {data['age']}. Your message: {data['message']}, based on this give me an appropriate response"
 
     # Send prompt to Mistral (replace this with your actual implementation)
-    mistral_response = "Mistral response: Your prompt has been processed successfully."
+
+    api_key = "T0krPQPq0lNykTpOJIjF3BdEjA4srEB7"
+    model = "mistral-tiny"
+
+    client = MistralClient(api_key=api_key)
+
+    messages = [
+        ChatMessage(role="user", content=prompt)
+    ]
+
+    # No streaming
+    chat_response = client.chat(
+        model=model,
+        messages=messages,
+    )
+
+    # print(chat_response.choices[0].message.content)
+    mistral_response = chat_response.choices[0].message.content
 
     return jsonify({"prompt": prompt, "mistral_response": mistral_response})
 
