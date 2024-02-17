@@ -1,4 +1,5 @@
 # emotion_analysis_model.py
+import requests
 
 def analyze_emotion(image_data):
     # Implement emotion analysis logic here
