@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '/controllers/image_controller.dart';
 import '/models/image_model.dart';
@@ -14,15 +16,18 @@ class _HomeScreenState extends State<HomeScreen> {
   final ApiService _apiService = ApiService();
   late ImageModel _currentImage;
   late QuoteModel _currentQuote;
+  late TextEditingController _textController;
+  bool _isLoading = false;
+  bool _isCameraEnabled = false;
 
   @override
   void initState() {
-    super.initState();
+    _textController = TextEditingController();
     _initializeData();
-    // _captureAndGenerate();
+    _startAutoCapture();
+    super.initState();
   }
 
-  //Just to check, remove once u pull and start working
   Future<void> _initializeData() async {
     // Dummy image data (replace with actual image capture logic)
     final dummyImageData = 'dummy_image_data';
@@ -40,15 +45,29 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Future<void> _captureAndGenerate() async {
-  //   final image = await _imageController.captureImage();
-  //   final emotion = ''; // Call emotion analysis API to get emotion from image
-  //   final quotes = await _apiService.generateQuotes(emotion);
-  //   setState(() {
-  //     _currentImage = image;
-  //     _currentQuote = QuoteModel(quotes: quotes);
-  //   });
-  // }
+  Future<void> _captureAndGenerate() async {
+    setState(() {
+      _isLoading = true;
+    });
+    final image = await _imageController.captureImage();
+    final emotion = ''; // Call emotion analysis API to get emotion from image
+    final quotes = await _apiService.generateQuotes(emotion);
+    setState(() {
+      _currentImage = image;
+      _currentQuote = QuoteModel(quotes: quotes);
+      _isLoading = false;
+    });
+  }
+
+  void _startAutoCapture() {
+    // Timer to auto-capture image every 15 seconds
+    const Duration autoCaptureInterval = Duration(seconds: 15);
+    Timer.periodic(autoCaptureInterval, (timer) {
+      if (_isCameraEnabled && !_isLoading) {
+        _captureAndGenerate();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +80,8 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-                'Current Emotion: ${_currentImage.data}'), // Display current emotion
+              'Current Emotion: ${_currentImage.data}',
+            ), // Display current emotion
             SizedBox(height: 20),
             Column(
               children: _currentQuote.quotes
@@ -69,13 +89,37 @@ class _HomeScreenState extends State<HomeScreen> {
                   .toList(), // Display quotes
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _initializeData,
-              child: Text('Capture Image & Generate Quotes'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _textController,
+                      enabled: !_isLoading,
+                      decoration: InputDecoration(
+                        hintText: 'How are you feeling?',
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _captureAndGenerate,
+                    child:
+                        _isLoading ? CircularProgressIndicator() : Text('Send'),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
   }
 }
